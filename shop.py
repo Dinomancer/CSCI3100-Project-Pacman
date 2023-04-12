@@ -19,6 +19,7 @@ EQUIPPED = 2
 class Shop:
     
     # default skin price is 500 gold; here reserve a mean to change skin price
+    # in this list, default is set to 0. Later, each 0 would be treated as 500
     skin_price = [0, 0, 2000]
     # CHANGE THE NAMES AFTER DRAWING THE SKINS
     skin_name = ['Glory', 'King', 'IDK']
@@ -120,6 +121,7 @@ class Shop:
     def get_skin_name(self, skin_idx):
         return self.skin_name[skin_idx]
     
+    # ALREADY EXISTS IN MAIN.PY, can delete it
     def draw_gold_balance(self):
         gold_balance_text = f"Gold: {self.dbcontrol.gold}"
         gold_balance_font = pygame.font.Font(None, 20)
