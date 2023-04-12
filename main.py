@@ -36,6 +36,7 @@ class Pacman:
     map = None
     pacmanGridPos = [0,0]
     pacmanRealPos = [0,0]
+    pacmanInitPos = [0,0]
     pacmanDir = "right"
     pacmanMove = False
     ghosts = []     #[x,y,gridx,gridy,dir,img]
@@ -81,8 +82,8 @@ class Pacman:
         if stage == "Menu":
             closeButton = Button((1010,1060,10,60),"Img\\defaultSkin\\closeButton.png", "Quit")
             startButton = Button((600,680,320,400),"Img\\defaultSkin\\startButton.png", "MainGame")
-
-            self.buttons = [closeButton, startButton]
+            restartButton = Button((1070,1120,10,60),"Img\\defaultSkin\\restartButton.png", "Menu")
+            self.buttons = [closeButton, startButton, restartButton]
         if stage == "Shop":     #SHOP: put all buttons in the shop here
             pass
         if stage == "Editor":   #EDITOR: put all buttons present in the editor here
@@ -92,7 +93,8 @@ class Pacman:
         if stage == "MainGame":
             closeButton = Button((1010,1060,10,60),"Img\\defaultSkin\\closeButton.png", "Quit")
             pauseButton = Button((1010,1060,70,120),"Img\\defaultSkin\\pauseButton.png", "Pause")
-            self.buttons = [closeButton, pauseButton]
+            restartButton = Button((1070,1120,10,60),"Img\\defaultSkin\\restartButton.png", "Menu")
+            self.buttons = [closeButton, pauseButton, restartButton]
         if stage == "GameOverAnimation":
             pacman.screen.fill(BLACK)
             if self.pacmanDir == "right":
@@ -117,10 +119,19 @@ class Pacman:
             self.setStage("GameOver")
             
         if stage == "GameOver":
-            restartButton = Button((640-100,640+100,460-40,460+40),"Img\\defaultSkin\\buttonFrame.png", "Menu", "Back to Menu")
+            restartButton1 = Button((640-100,640+100,460-40,460+40),"Img\\defaultSkin\\buttonFrame.png", "Menu", "Back to Menu")
             closeButton = Button((1010,1060,10,60),"Img\\defaultSkin\\closeButton.png", "Quit")
+            restartButton = Button((1070,1120,10,60),"Img\\defaultSkin\\restartButton.png", "Menu")
             text = Button((640,640,250,250),None,None,"Game Over")
-            self.buttons = [restartButton, closeButton, text]
+            text1 = Button((640,640,300,300),None,None,"Score :"+str(self.score))
+            self.buttons = [restartButton1, closeButton, restartButton, text, text1]
+        if stage == "Win":
+            restartButton1 = Button((640-100,640+100,460-40,460+40),"Img\\defaultSkin\\buttonFrame.png", "Menu", "Back to Menu")
+            closeButton = Button((1010,1060,10,60),"Img\\defaultSkin\\closeButton.png", "Quit")
+            restartButton = Button((1070,1120,10,60),"Img\\defaultSkin\\restartButton.png", "Menu")
+            text = Button((640,640,250,250),None,None,"You Win")
+            text1 = Button((640,640,300,300),None,None,"Score :"+str(self.score))
+            self.buttons = [restartButton1, closeButton, restartButton, text, text1]
             
 
     def drawScreen(self):
@@ -128,6 +139,16 @@ class Pacman:
             self.drawMap(self.map)
         for b in self.buttons:
             b.draw(self.screen)
+        #draw highscore and score
+        if self.stage in ["MainGame", "Menu"]:
+            t = self.font.render("Score: "+str(self.score),True,BLUE)
+            tRect = t.get_rect()
+            tRect.center = (100,100)
+            self.screen.blit(t,tRect)
+            t = self.font.render("Highscore: "+str(self.highscore),True,BLUE)
+            tRect = t.get_rect()
+            tRect.center = (100,150)
+            self.screen.blit(t,tRect)
 
     def listen(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -139,6 +160,7 @@ class Pacman:
                 pass
         if event.type == pygame.KEYDOWN:
             if self.stage == "MainGame":
+                self.paused = False
                 if event.key == pygame.K_UP:
                     self.delayKeyInput = "up"
                 if event.key == pygame.K_DOWN:
@@ -156,6 +178,7 @@ class Pacman:
             self.setStage("MainGame")
             self.mainGameInit("MainGame")
         if operation == "Menu":
+            self.score = 0
             self.setStage("Menu")
         if operation == "Pause":
             if self.paused == True:
@@ -166,8 +189,9 @@ class Pacman:
     
     def mainGameInit(self, mapPath):
         self.score = 0
-        self.life = 1
-        self.coin = 0
+        self.life = 2
+        self.ghost = []
+        self.paused = True
         self.importMap("Map\\test.txt")
         self.drawMap(self.map)
         self.ghostSpeed = 1
@@ -220,6 +244,7 @@ class Pacman:
                     line.append("0")
                     self.pacmanGridPos = [i,j]
                     self.pacmanRealPos = [280+36*j,36*i]
+                    self.pacmanInitPos = [i,j]
                 elif c=="4": #ghost
                     line.append("0")
                     self.ghosts.append([i,j,280+36*j,36*i,"right"])
@@ -267,6 +292,12 @@ class Pacman:
             if abs(self.pacmanRealPos[0]-ghost[2]) < 30 and abs(self.pacmanRealPos[1]-ghost[3]) < 30:
                 return True
         return False
+    def isWinning(self):
+        for i in self.map:
+            for j in i:
+                if j=="1":
+                    return False
+        return True
 
     def step(self):
         if self.stage == "GameOverAnimation":
@@ -348,9 +379,22 @@ class Pacman:
 
                         ghost[4] = random.choice(choices)
                 if self.isTouchingGhost():
-                    self.setStage("GameOverAnimation")
-
-                        
+                    self.life -= 1
+                    #loses
+                    if self.life <= 0:
+                        self.highscore = max(self.score,self.highscore)
+                        self.coin += self.score//10
+                        self.setStage("GameOverAnimation")
+                    else:
+                        self.pacmanGridPos[0] = self.pacmanInitPos[0]
+                        self.pacmanGridPos[1] = self.pacmanInitPos[1]
+                        self.pacmanRealPos = [280+36*self.pacmanInitPos[1],36*self.pacmanInitPos[0]]
+                        self.paused = True
+                        self.pacmanDir = "right"
+                if self.isWinning():
+                        self.highscore = max(self.score,self.highscore)
+                        self.coin += self.score//10
+                        self.setStage("Win")
 
             if self.map[self.pacmanGridPos[0]][self.pacmanGridPos[1]] == "1":
                 self.score += 10
