@@ -1,5 +1,6 @@
 import sys
 import pygame
+import random
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -22,6 +23,7 @@ class Pacman:
     imgPacdot = None
     gifPacman = None
     imgGhost = None
+    imgGhosts = None
     pacmanFrame = 0
 
     score = 0
@@ -33,7 +35,7 @@ class Pacman:
     pacmanRealPos = [0,0]
     pacmanDir = "right"
     pacmanMove = False
-    ghosts = []     #[x,y,gridx,gridy,dir]
+    ghosts = []     #[x,y,gridx,gridy,dir,img]
     stopped = False
     delayKeyInput = None
 
@@ -41,13 +43,19 @@ class Pacman:
         self.screen = pygame.display.set_mode((1280, 720))
         #self.screen = pygame.display.set_mode((1280, 720), pygame.FULLSCREEN)
         pygame.display.set_caption('Pacman')
-        self.font = pygame.font.Font('Nunito-Medium.ttf',50)
+        self.font = pygame.font.Font('Nunito-Medium.ttf',25)
         self.setStage("Menu")   #SHOP/EDITOR: to start stage in shop/editor, change this to "Editor"/"Shop"
         self.imgWall = pygame.image.load("Img\\defaultSkin\\wall.png").convert()
         self.imgPacman = pygame.image.load("Img\\defaultSkin\\pacman.png").convert()
         self.imgPacman.set_colorkey(BLACK)
-        self.imgGhost = pygame.image.load("Img\\defaultSkin\\ghost.png").convert()
+        self.imgGhost = pygame.image.load("Img\\defaultSkin\\ghost0.png").convert()
         self.imgGhost.set_colorkey(BLACK)
+        self.imgGhost = pygame.transform.scale(self.imgGhost, (36,36))
+        self.imgGhosts = []
+        for i in range(4):
+            self.imgGhosts.append(pygame.image.load("Img\\defaultSkin\\ghost"+str(i)+".png").convert())
+            self.imgGhosts[i].set_colorkey(BLACK)
+            self.imgGhosts[i] = pygame.transform.scale(self.imgGhosts[i], (36,36))
         self.gifPacman = []
         for i in range(10):
             img = pygame.image.load("Img\\defaultSkin\\pixil-frame-"+str(i)+".png").convert()
@@ -75,10 +83,15 @@ class Pacman:
             pass
         if stage == "MainGame":
             closeButton = Button((1010,1060,10,60),"Img\\defaultSkin\\closeButton.png", "quit")
-            self.buttons = [closeButton]
+            pauseButton = Button((1010,1060,70,120),"Img\\defaultSkin\\pauseButton.png", "pause")
+            self.buttons = [closeButton, pauseButton]
+        if stage == "GameOverAnimation":
+            pass
+        if stage == "GameOver":
+            pass
 
     def drawScreen(self):
-        if (not self.map == None) and self.stage=="MainGame":   #SHOP/EDITOR: modify this line to hide the game map
+        if (not self.map == None) and (self.stage=="MainGame" or self.stage=="GameOverAnimation"):   #SHOP/EDITOR: modify this line to hide the game map
             self.drawMap(self.map)
         for b in self.buttons:
             b.draw(self.screen)
@@ -109,6 +122,8 @@ class Pacman:
         if operation == "MainGame":
             self.setStage("MainGame")
             self.mainGameInit("MainGame")
+        if operation == "Menu":
+            self.setStage("Menu")
         #SHOP: you can put operations you need here, for example operation=="buyBuff1", buff1 += 1
     
     def mainGameInit(self, mapPath):
@@ -138,8 +153,8 @@ class Pacman:
                     #self.screen.blit(self.imgGhost, (280+36*j,36*i))
 
         #draw ghost
-        for ghost in self.ghosts:
-            self.screen.blit(self.imgGhost, (ghost[0],ghost[1]))
+        for i in range(len(self.ghosts)):
+            self.screen.blit(self.imgGhosts[i%4], (self.ghosts[i][2],self.ghosts[i][3]))
         #draw pacman
         if self.pacmanDir == "right":
             angle = 0
@@ -167,20 +182,21 @@ class Pacman:
                     self.pacmanRealPos = [280+36*j,36*i]
                 elif c=="4": #ghost
                     line.append("0")
-                    self.ghosts.append([280+36*j,36*i,i,j,"right"])
+                    self.ghosts.append([i,j,280+36*j,36*i,"right"])
                 else:
                     line.append(c)
             self.map.append(line)
         map.close()
     
+
     def saveMap(self, mapPath):
         s = ""
         for i in range(0,20):
             for j in range(0,20):
-                if self.map[i][j]=="3":   #fill pacman pos with empty
-                    s += "0"
-                else:
-                    s += str(self.map[i][j])
+                s += str(self.map[i][j])
+        self.map[self.pacmanGridPos[0]][self.pacmanGridPos[1]] = "3"
+        for ghost in self.ghosts:
+            self.map[ghost[0]][ghost[1]] = "4"
         map = open(mapPath, "w")
         map.write(s)
         map.close()
@@ -196,7 +212,7 @@ class Pacman:
             return True
         return False
 
-    def changeDir(self):
+    def changePacmanDir(self):
         if not self.isBlocked(self.delayKeyInput):
             if self.pacmanDir == "right" or self.pacmanDir == "left":
                 if self.delayKeyInput == "up" or self.delayKeyInput == "down":
@@ -208,13 +224,14 @@ class Pacman:
 
     def isTouchingGhost(self):
         for ghost in self.ghosts:
-            if abs(self.pacmanRealPos[0]-ghost[0]) < 10 or abs(self.pacmanRealPos[1]-ghost[1]) < 10:
+            if abs(self.pacmanRealPos[0]-ghost[2]) < 30 and abs(self.pacmanRealPos[1]-ghost[3]) < 30:
                 return True
         return False
 
     def step(self):
         if self.stage == "MainGame":
             if self.paused == False:
+                #move pacman
                 if self.pacmanDir == "right" and self.map[self.pacmanGridPos[0]][self.pacmanGridPos[1]+1]!="2":
                     self.pacmanRealPos[0] += 3
                     self.stopped = False
@@ -236,15 +253,63 @@ class Pacman:
                     self.pacmanGridPos[1] = (self.pacmanRealPos[0]+18-280)//36
                     self.pacmanRealPos = [280+36*self.pacmanGridPos[1],36*self.pacmanGridPos[0]]
                     #change direction
-                    self.changeDir()
+                    self.changePacmanDir()
                 
                 if self.stopped == True:
-                        self.changeDir()
+                        self.changePacmanDir()
                 
                 if self.stopped == False:
                     self.pacmanFrame += 1
                     if self.pacmanFrame >= 7:
                         self.pacmanFrame = 0
+
+                #move ghost
+                for ghost in self.ghosts:
+                    if ghost[4] == "right" and self.map[ghost[0]][ghost[1]+1]!="2":
+                        ghost[2] += 2
+                    elif ghost[4] == "left" and self.map[ghost[0]][ghost[1]-1]!="2":
+                        ghost[2] -= 2
+                    elif ghost[4] == "up" and self.map[ghost[0]-1][ghost[1]]!="2":
+                        ghost[3] -= 2
+                    elif ghost[4] == "down" and self.map[ghost[0]+1][ghost[1]]!="2":
+                        ghost[3] += 2
+
+                    #reached new grid
+                    if abs(ghost[0]*36-ghost[3])>=36 or abs(ghost[1]*36+280-ghost[2])>=36:
+                        ghost[0] = (ghost[3]+18)//36
+                        ghost[1] = (ghost[2]+18-280)//36
+                        ghost[2] = 280+36*ghost[1]
+                        ghost[3] = 36*ghost[0]
+                        #change direction
+                        choices = []
+                        if self.map[ghost[0]][ghost[1]+1]!="2":
+                            choices.append("right")
+                        if self.map[ghost[0]][ghost[1]-1]!="2":
+                            choices.append("left")
+                        if self.map[ghost[0]-1][ghost[1]]!="2":
+                            choices.append("up")
+                        if self.map[ghost[0]+1][ghost[1]]!="2":
+                            choices.append("down")
+                        #only turn back if facing dead end
+                        if len(choices)>=2:
+                            try:
+                                if ghost[4]=="up":
+                                    choices.remove("down")
+                                elif ghost[4]=="down":
+                                    choices.remove("up")
+                                elif ghost[4]=="left":
+                                    choices.remove("right")
+                                elif ghost[4]=="right":
+                                    choices.remove("left")
+                            except:
+                                pass
+
+                        ghost[4] = random.choice(choices)
+                if self.isTouchingGhost():
+                    self.setStage("Menu")
+
+                        
+
             if self.map[self.pacmanGridPos[0]][self.pacmanGridPos[1]] == "1":
                 self.score += 10
                 self.map[self.pacmanGridPos[0]][self.pacmanGridPos[1]] = "0"
@@ -256,15 +321,22 @@ class Button:
     operation = None
     text = None
     
-    def __init__(self, position, imgPath=None, operation=None):
+    def __init__(self, position, imgPath=None, operation=None, text=None):
         imgToLoad = pygame.image.load(imgPath).convert()
         self.img = pygame.transform.scale(imgToLoad,(position[1]-position[0],position[3]-position[2]))
         self.position = position
         self.operation = operation
+        self.text = text
 
     def draw(self, surface):
         if not self.img == None:
             surface.blit(self.img, (self.position[0],self.position[2]))
+        if not self.text == None:
+            #this line access pacman inside button
+            t = pacman.font.render(self.text,True,SKYBLUE)
+            tRect = t.get_rect()
+            tRect.center = ((self.position[1]+self.position[0])//2,(self.position[3]+self.position[2])//2)
+            surface.blit(t,tRect)
 
     def isClicked(self, mousePos):
         p = self.position
