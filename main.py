@@ -38,6 +38,7 @@ class Pacman:
     ghosts = []     #[x,y,gridx,gridy,dir,img]
     stopped = False
     delayKeyInput = None
+    
 
     def __init__(self):
         self.screen = pygame.display.set_mode((1280, 720))
@@ -67,7 +68,30 @@ class Pacman:
         self.imgWall = pygame.transform.scale(self.imgWall,(36,36))
         self.imgPacman = pygame.transform.scale(self.imgPacman,(36,36))
         self.imgPacdot = pygame.transform.scale(self.imgPacdot,(36,36))
-
+        
+    def background(self):
+        i = 280
+        while i <= 1000:
+            if i != 664:
+                dot = Button((i, i + 48, 672, 720),"Img\\defaultSkin\\pacdot.png", None)
+                dot.draw(self.screen)
+            else:
+                dot = Button((i, i + 48, 672, 720), "Img\\defaultSkin\\ghost.png", None)
+                dot.draw(self.screen)
+            if i == 520:
+                dot = Button((i, i + 48, 0, 48), "Img\\defaultSkin\\Pacman.png", None)
+            else:
+                dot = Button((i, i + 48, 0, 48), "Img\\defaultSkin\\pacdot.png", None)
+            dot.draw(self.screen)
+            i += 48
+        i = 48
+        while i < 720:
+            dot = Button((280, 328, i, i + 48), "Img\\defaultSkin\\pacdot.png", None)
+            dot.draw(self.screen)
+            dot = Button((1000, 1048, i, i + 48), "Img\\defaultSkin\\pacdot.png", None)
+            dot.draw(self.screen)
+            i += 48
+            
     def setStage(self, stage):
         self.stage = stage
         if stage == "Menu":
