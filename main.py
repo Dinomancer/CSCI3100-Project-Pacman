@@ -1,6 +1,7 @@
 import sys
 import pygame
 import random
+import time
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -25,8 +26,10 @@ class Pacman:
     imgGhost = None
     imgGhosts = None
     pacmanFrame = 0
+    gifPacmanDeath = None
 
     score = 0
+    highscore = 0
     life = 1
     coin = 0
     ghostSpeed = 1
@@ -38,7 +41,6 @@ class Pacman:
     ghosts = []     #[x,y,gridx,gridy,dir,img]
     stopped = False
     delayKeyInput = None
-    
 
     def __init__(self):
         self.screen = pygame.display.set_mode((1280, 720))
@@ -61,41 +63,23 @@ class Pacman:
         for i in range(10):
             img = pygame.image.load("Img\\defaultSkin\\pixil-frame-"+str(i)+".png").convert()
             img.set_colorkey(BLACK)
-            pygame.transform.scale(img, (36,36))
+            img = pygame.transform.scale(img, (36,36))
             self.gifPacman.append(pygame.transform.scale(img, (36,36)))
-            
+        self.gifPacmanDeath = []
+        for i in range(7):
+            img = pygame.image.load("Img\\defaultSkin\\death"+str(i)+".png").convert()
+            img.set_colorkey(BLACK)
+            img = pygame.transform.scale(img, (36,36))
+            self.gifPacmanDeath.append(img)
         self.imgPacdot = pygame.image.load("Img\\defaultSkin\\pacdot.png").convert()
         self.imgWall = pygame.transform.scale(self.imgWall,(36,36))
         self.imgPacman = pygame.transform.scale(self.imgPacman,(36,36))
         self.imgPacdot = pygame.transform.scale(self.imgPacdot,(36,36))
-        
-    def background(self):
-        i = 280
-        while i <= 1000:
-            if i != 664:
-                dot = Button((i, i + 48, 672, 720),"Img\\defaultSkin\\pacdot.png", None)
-                dot.draw(self.screen)
-            else:
-                dot = Button((i, i + 48, 672, 720), "Img\\defaultSkin\\ghost.png", None)
-                dot.draw(self.screen)
-            if i == 520:
-                dot = Button((i, i + 48, 0, 48), "Img\\defaultSkin\\Pacman.png", None)
-            else:
-                dot = Button((i, i + 48, 0, 48), "Img\\defaultSkin\\pacdot.png", None)
-            dot.draw(self.screen)
-            i += 48
-        i = 48
-        while i < 720:
-            dot = Button((280, 328, i, i + 48), "Img\\defaultSkin\\pacdot.png", None)
-            dot.draw(self.screen)
-            dot = Button((1000, 1048, i, i + 48), "Img\\defaultSkin\\pacdot.png", None)
-            dot.draw(self.screen)
-            i += 48
-            
+
     def setStage(self, stage):
         self.stage = stage
         if stage == "Menu":
-            closeButton = Button((1010,1060,10,60),"Img\\defaultSkin\\closeButton.png", "quit")
+            closeButton = Button((1010,1060,10,60),"Img\\defaultSkin\\closeButton.png", "Quit")
             startButton = Button((600,680,320,400),"Img\\defaultSkin\\startButton.png", "MainGame")
 
             self.buttons = [closeButton, startButton]
@@ -106,13 +90,38 @@ class Pacman:
         if stage == "Settings":
             pass
         if stage == "MainGame":
-            closeButton = Button((1010,1060,10,60),"Img\\defaultSkin\\closeButton.png", "quit")
-            pauseButton = Button((1010,1060,70,120),"Img\\defaultSkin\\pauseButton.png", "pause")
+            closeButton = Button((1010,1060,10,60),"Img\\defaultSkin\\closeButton.png", "Quit")
+            pauseButton = Button((1010,1060,70,120),"Img\\defaultSkin\\pauseButton.png", "Pause")
             self.buttons = [closeButton, pauseButton]
         if stage == "GameOverAnimation":
-            pass
+            pacman.screen.fill(BLACK)
+            if self.pacmanDir == "right":
+                angle = 0
+            if self.pacmanDir == "left":
+                angle = 180
+            if self.pacmanDir == "up":
+                angle = 90
+            if self.pacmanDir == "down":
+                angle = 270
+            rotatedPacman = pygame.transform.rotate(self.gifPacmanDeath[0], angle)
+            self.screen.blit(rotatedPacman, (self.pacmanRealPos[0],self.pacmanRealPos[1]))
+            pygame.display.flip()
+            time.sleep(1)
+            pacman.screen.fill(BLACK)
+            for frame in range(1,7):
+                rotatedPacman = pygame.transform.rotate(self.gifPacmanDeath[frame], angle)
+                self.screen.blit(rotatedPacman, (self.pacmanRealPos[0],self.pacmanRealPos[1]))
+                pygame.display.flip()
+                time.sleep(0.5)
+                pacman.screen.fill(BLACK)
+            self.setStage("GameOver")
+            
         if stage == "GameOver":
-            pass
+            restartButton = Button((640-100,640+100,460-40,460+40),"Img\\defaultSkin\\buttonFrame.png", "Menu", "Back to Menu")
+            closeButton = Button((1010,1060,10,60),"Img\\defaultSkin\\closeButton.png", "Quit")
+            text = Button((640,640,250,250),None,None,"Game Over")
+            self.buttons = [restartButton, closeButton, text]
+            
 
     def drawScreen(self):
         if (not self.map == None) and (self.stage=="MainGame" or self.stage=="GameOverAnimation"):   #SHOP/EDITOR: modify this line to hide the game map
@@ -140,7 +149,7 @@ class Pacman:
                     self.delayKeyInput = "right"
 
     def runOperation(self, operation):
-        if operation == "quit":
+        if operation == "Quit":
             pygame.quit()
             sys.exit()
         if operation == "MainGame":
@@ -148,6 +157,11 @@ class Pacman:
             self.mainGameInit("MainGame")
         if operation == "Menu":
             self.setStage("Menu")
+        if operation == "Pause":
+            if self.paused == True:
+                self.paused = False
+            else:
+                self.paused = True
         #SHOP: you can put operations you need here, for example operation=="buyBuff1", buff1 += 1
     
     def mainGameInit(self, mapPath):
@@ -190,8 +204,10 @@ class Pacman:
             angle = 270
         rotatedPacman = pygame.transform.rotate(self.gifPacman[self.pacmanFrame], angle)
         self.screen.blit(rotatedPacman, (self.pacmanRealPos[0],self.pacmanRealPos[1]))
+        #draw life
+        for i in range(self.life):
+            self.screen.blit(self.imgPacman, (10+36*i, 670))
 
-                    
 
     def importMap(self, mapPath):
         self.map = []
@@ -253,6 +269,8 @@ class Pacman:
         return False
 
     def step(self):
+        if self.stage == "GameOverAnimation":
+            pass
         if self.stage == "MainGame":
             if self.paused == False:
                 #move pacman
@@ -330,7 +348,7 @@ class Pacman:
 
                         ghost[4] = random.choice(choices)
                 if self.isTouchingGhost():
-                    self.setStage("Menu")
+                    self.setStage("GameOverAnimation")
 
                         
 
@@ -346,8 +364,9 @@ class Button:
     text = None
     
     def __init__(self, position, imgPath=None, operation=None, text=None):
-        imgToLoad = pygame.image.load(imgPath).convert()
-        self.img = pygame.transform.scale(imgToLoad,(position[1]-position[0],position[3]-position[2]))
+        if imgPath!=None:
+            imgToLoad = pygame.image.load(imgPath).convert()
+            self.img = pygame.transform.scale(imgToLoad,(position[1]-position[0],position[3]-position[2]))
         self.position = position
         self.operation = operation
         self.text = text
@@ -357,7 +376,7 @@ class Button:
             surface.blit(self.img, (self.position[0],self.position[2]))
         if not self.text == None:
             #this line access pacman inside button
-            t = pacman.font.render(self.text,True,SKYBLUE)
+            t = pacman.font.render(self.text,True,BLUE)
             tRect = t.get_rect()
             tRect.center = ((self.position[1]+self.position[0])//2,(self.position[3]+self.position[2])//2)
             surface.blit(t,tRect)
