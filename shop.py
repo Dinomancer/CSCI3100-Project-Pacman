@@ -8,8 +8,8 @@
     VERSION -1
 """
 import pygame
-from messagedialog import MessageDialog
-from dbcontrol import DBControl
+#from messagedialog import MessageDialog
+#from dbcontrol import DBControl
 
 # skin status
 UNPOSSESSED = 0

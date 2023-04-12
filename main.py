@@ -2,6 +2,8 @@ import sys
 import pygame
 import random
 import time
+from shop import Shop
+from DBControl import DBControl
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -42,6 +44,29 @@ class Pacman:
     ghosts = []     #[x,y,gridx,gridy,dir,img]
     stopped = False
     delayKeyInput = None
+    """
+    AMENDMENT 1: BUFF from SHOP: Hugh
+    This states the buff effect
+    Call example:
+        life = extra_life[self.dbcontrol.buff[0]]
+        speed = speed_boost_multiplier[self.dbcontrol.buff[w]]
+    # buff0: extra life
+    # buff1: score multiplier
+    # buff2: pacman speed booster
+    # buff3: shield
+    # buff4: ghost slow
+    """
+    # each buff has 6 levels, level 0 to level 5
+    extra_life = [1,2,3,4,5,6]
+    score_multiplier = [1.5, 1.5, 2.0, 2.0, 2.5, 2.5]
+    speed_boost_multiplier = [1.1, 1.1, 1.15, 1.2, 1.25, 1.3]
+    ghost_slow_multiplier = [0.9, 0.75, 0.7, 0.65, 0.6, 0.5]
+    # for all durations, need a clock
+    score_multiplier_duration = [2, 5, 7, 10, 12, 15]
+    speed_boost_duration = [2, 5, 7, 10, 12, 15]
+    repellant_shield_duration = [2, 5, 7, 10, 12, 15]
+    ghost_slow_duration = [2, 5, 7, 10, 12, 15]
+    '''END OF AMENDMENT 1'''
 
     def __init__(self):
         self.screen = pygame.display.set_mode((1280, 720))
@@ -76,6 +101,14 @@ class Pacman:
         self.imgWall = pygame.transform.scale(self.imgWall,(36,36))
         self.imgPacman = pygame.transform.scale(self.imgPacman,(36,36))
         self.imgPacdot = pygame.transform.scale(self.imgPacdot,(36,36))
+        """
+        AMENDMENT 2: introduction of DBControl
+        This needs further modification to be able to read, save and upload
+        DBControl and Shop already imported
+        """
+        self.dbcontrol = DBControl()
+        self.shop = Shop(self.dbcontrol)
+        """END OF AMENDMENT 2"""
 
     def setStage(self, stage):
         self.stage = stage
@@ -83,9 +116,48 @@ class Pacman:
             closeButton = Button((1010,1060,10,60),"Img\\defaultSkin\\closeButton.png", "Quit")
             startButton = Button((600,680,320,400),"Img\\defaultSkin\\startButton.png", "MainGame")
             restartButton = Button((1070,1120,10,60),"Img\\defaultSkin\\restartButton.png", "Menu")
-            self.buttons = [closeButton, startButton, restartButton]
+            """
+            AMENDMENT 3: SHOP STAGES
+            """
+            # Here is a temporary shop button 
+            shopButton = Button((500,780,440,520), "Img\\defaultSkin\\closeButton.png", "enter_shop")
+            self.buttons = [closeButton, startButton, restartButton, shopButton]
         if stage == "Shop":     #SHOP: put all buttons in the shop here
-            pass
+            quitButton = Button((10, 60, 10, 60), "Img\\defaultSkin\\closeButton.png", 'exit_shop')
+            buffShopButton = Button ((450, 830, 300, 420), "Img\\Button\\button_buff-shop.png", 'enter_buff_shop')
+            skinShopButton = Button ((450, 830, 480, 600), "Img\\Button\\button_skin-shop.png", 'enter_skin_shop')
+
+            self.buttons = [quitButton, buffShopButton, skinShopButton]
+
+        if stage == 'Buff_Shop' :
+            quitButton = Button((10, 60, 10, 60), "Img\\defaultSkin/closeButton.png", 'return_to_shop_menu')
+            # All can be implemented using list in final code
+            buff0 = Button((340, 440, 620, 660), "Img\\Button\\button_upgrade.png", 'upgrade_buff0')
+            buff1 = Button((465, 565, 620, 660), "Img\\Button\\button_upgrade.png", 'upgrade_buff1')
+            buff2 = Button((590, 690, 620, 660), "Img\\Button\\button_upgrade.png", 'upgrade_buff2')
+            buff3 = Button((715, 815, 620, 660), "Img\\Button\\button_upgrade.png", 'upgrade_buff3')
+            buff4 = Button((840, 940, 620, 660), "Img\\Button\\button_upgrade.png", 'upgrade_buff4')
+            icon0 = Button((340, 440, 40, 140), "Img\\Shop\\life.png", None)
+            icon1 = Button((465, 565, 40, 140), "Img\\Shop\\score_multiplier.png", None)
+            icon2 = Button((590, 690, 40, 140), "Img\\Shop\\Speed.png", None)
+            icon3 = Button((715, 815, 40, 140), "Img\\Shop\\Invincible.png", None)
+            icon4 = Button((840, 940, 40, 140), "Img\\Shop\\ghost_slow.png", None)
+            lv = []
+            for i in range(5): # will call Lv6.png; I set Lv6.png as identical to Lv5.png
+                lv.append(Button((340 + 125 * i, 440 + 125 * i, 160, 600), "Img\\Shop\\Lv{}.png".format(self.dbcontrol.buff[i]), None))
+                
+            self.buttons = [quitButton, buff0,icon0, buff1,icon1, buff2,icon2, buff3,icon3, buff4,icon4, lv[0],lv[1],lv[2],lv[3],lv[4]]
+            
+        if stage == 'Skin_Shop':
+            quitButton = Button((10, 60, 10, 60), "Img\\defaultSkin\\closeButton.png", 'return_to_shop_menu')
+            leftButton = Button((350, 400, 520, 560), "Img\\Button\\left_unclick.png", 'previous_skin')
+            rightButton = Button((880, 930, 520, 560), "Img\\Button\\right_unclick.png", 'next_skin')
+            buyButton = Button((540, 740, 480, 560), "Img\\Button\\button_buy.png", 'buy_skin')
+            equipButton = Button((540, 740, 600, 680), "Img\\Button\\button_equip.png", 'equip_skin')
+            
+            self.buttons = [quitButton, leftButton, rightButton, buyButton, equipButton]
+
+            """END OF AMENDMENT 3"""
         if stage == "Editor":   #EDITOR: put all buttons present in the editor here
             pass
         if stage == "Settings":
@@ -149,7 +221,23 @@ class Pacman:
             tRect = t.get_rect()
             tRect.center = (100,150)
             self.screen.blit(t,tRect)
+        """
+        AMENDMENT 4 Call draw gold while in shop
+        """
+        if self.stage == "Shop" or self.stage == 'Buff_Shop' or self.stage == 'Skin_Shop':
+            self.draw_gold_balance()
+        """END OF AMENDMENT 4"""
 
+    """
+    AMENDMENT 5: draw gold function
+    """
+    def draw_gold_balance(self):
+        gold_balance_text = f"Gold: {self.dbcontrol.gold}"
+        gold_balance_font = pygame.font.Font(None, 20)
+        gold_balance_surf = gold_balance_font.render(gold_balance_text, True, (255, 255, 255))
+        gold_balance_rect = gold_balance_surf.get_rect(topright=(self.screen.get_width() - 20, 20))
+        self.screen.blit(gold_balance_surf, gold_balance_rect)
+    """END OF AMENDMENT 5"""
     def listen(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             for b in self.buttons:
@@ -186,7 +274,70 @@ class Pacman:
             else:
                 self.paused = True
         #SHOP: you can put operations you need here, for example operation=="buyBuff1", buff1 += 1
-    
+        """
+        AMENDMENT 6: Shop functions
+        NOTE: THIS IS NOT THE FINAL VERSION; SOME COMPONENTS ARE MISSING
+        In shop, set stage after each action to refresh the appearance
+        """
+        MAIN_MENU = 0
+        BUFF_SHOP = 1
+        SKIN_SHOP = 2
+        global current_skin_idx
+
+        if operation == "enter_shop":
+            self.setStage('Shop')
+
+        if operation == "enter_buff_shop":
+            self.setStage('Buff_Shop')
+
+        if operation == "enter_skin_shop":
+            self.setStage('Skin_Shop')
+            current_skin_idx = 0
+            # Missing: draw the icon of 0th skin
+
+        if operation == "exit_shop":
+            self.setStage('Menu')
+        
+        if operation == "return_to_shop_menu":
+            self.setStage('Shop')
+
+        # Buff shop actions;             # Now missing notification of transactions or actions
+        if operation == 'upgrade_buff0':
+            self.shop.upgrade_buff(0)
+            self.setStage('Buff_Shop')
+        if operation == 'upgrade_buff1':
+            self.shop.upgrade_buff(1)
+            self.setStage('Buff_Shop')
+        if operation == 'upgrade_buff2':
+            self.shop.upgrade_buff(2)
+            self.setStage('Buff_Shop')
+        if operation == 'upgrade_buff3':
+            self.shop.upgrade_buff(3)
+            self.setStage('Buff_Shop')
+        if operation == 'upgrade_buff4':
+            self.shop.upgrade_buff(4)
+            self.setStage('Buff_Shop')
+
+        # Skin shop actions               # Now missing notification of transactions or actions
+        if operation == 'previous_skin':
+            current_skin_idx = (current_skin_idx - 1) % len(self.dbcontrol.skin)
+            self.setStage('Skin_Shop')
+            # Missing: draw the icon of current_index-th skin
+
+        if operation == 'next_skin':
+            current_skin_idx = (current_skin_idx + 1) % len(self.dbcontrol.skin)
+            self.setStage('Skin_Shop')
+            # Missing: draw the icon of current_index-th skin
+
+        if operation == 'buy_skin':
+            self.shop.buy_skin(current_skin_idx)
+            self.setStage('Skin_Shop')
+
+        if operation == 'equip_skin':
+            self.shop.equip_skin(current_skin_idx)
+            self.setStage('Skin_Shop')
+        """END OF AMENDMENT 6"""
+
     def mainGameInit(self, mapPath):
         self.score = 0
         self.life = 2
