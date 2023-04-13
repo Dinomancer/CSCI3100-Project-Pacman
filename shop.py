@@ -1,15 +1,5 @@
-
-"""
-    IMPORTANT NOTICE!!!
-    THIS VERSION IS NOT A FINAL VERSION
-    NOTIFICATION DIALOG OF SHOP ACTIONS ALL MISSING
-    NOW PRINT THE MESSAGE TO CONSOLE, WORKS NORMALLY
-
-    VERSION -1
-"""
 import pygame
-#from messagedialog import MessageDialog
-#from dbcontrol import DBControl
+from dbcontrol import DBControl
 
 # skin status
 UNPOSSESSED = 0
@@ -19,10 +9,10 @@ EQUIPPED = 2
 class Shop:
     
     # default skin price is 500 gold; here reserve a mean to change skin price
-    # in this list, default is set to 0. Later, each 0 would be treated as 500
     skin_price = [0, 0, 2000]
     # CHANGE THE NAMES AFTER DRAWING THE SKINS
     skin_name = ['Glory', 'King', 'IDK']
+    buff_name = ['Extra life', 'Score multiplier', 'Speed booster', 'Shield', 'Ghost slower']
 
     def __init__(self, dbcontrol):
         # buff0: extra life
@@ -41,27 +31,25 @@ class Shop:
     # it calls a message dialog for displaying the results
     # NOTE: level range from 1 to 6, and index range from 0~5. The default level is 1.
     def upgrade_buff(self, buff_idx):
-        MAX_LEVEL = 6
+        MAX_LEVEL = 5
         message = ""
 
         if 0 <= buff_idx < len(self.dbcontrol.buff):
             current_buff_level = self.dbcontrol.buff[buff_idx]
-            if current_buff_level < 6:
+            if current_buff_level < MAX_LEVEL:
                 buff_upgrade_cost = (current_buff_level + 1) * 100
 
                 if self.dbcontrol.gold >= buff_upgrade_cost:
                     self.dbcontrol.gold -= buff_upgrade_cost
                     self.dbcontrol.buff[buff_idx] += 1
-                    message = f"{self.dbcontrol.buff[buff_idx]} upgraded to level {current_buff_level + 1}."
+                    message = f"{self.buff_name[buff_idx]} upgraded to level {current_buff_level + 1}."
                 else:
                     message = "Insufficient gold."
             else:
                 message = f"{self.dbcontrol.buff[buff_idx]} is already at the maximum level."
         else:
             message = "Invalid buff index."
-        #message_dialog = MessageDialog(self.main.screen, message)
-        #message_dialog.show()
-        print(message)
+        return message
 
     # buy skin function is to buy a designated skin each time
     # it checks if the gold is sufficient and if the current skin is possessed
@@ -89,9 +77,7 @@ class Shop:
                 message = "You already own this skin."
         else:
             message = "Invalid skin index."
-        #message_dialog = MessageDialog(self.main.screen, message)
-        #message_dialog.show()
-        print(message)
+        return message
 
     # equip skin function is to equip designated skin
     # it checks if the current skin is possessed
@@ -114,17 +100,7 @@ class Shop:
                 message = "You do not own this skin."
         else:
             message = "Invalid skin index."
-        #message_dialog = MessageDialog(self.main.screen, message)
-        #message_dialog.show()
-        print(message)
+        return message
     
     def get_skin_name(self, skin_idx):
         return self.skin_name[skin_idx]
-    
-    # ALREADY EXISTS IN MAIN.PY, can delete it
-    def draw_gold_balance(self):
-        gold_balance_text = f"Gold: {self.dbcontrol.gold}"
-        gold_balance_font = pygame.font.Font(None, 20)
-        gold_balance_surf = gold_balance_font.render(gold_balance_text, True, (255, 255, 255))
-        gold_balance_rect = gold_balance_surf.get_rect(topright=(self.main.screen.get_width() - 20, 20))
-        self.main.screen.blit(gold_balance_surf, gold_balance_rect)
