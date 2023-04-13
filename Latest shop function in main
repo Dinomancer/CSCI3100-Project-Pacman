@@ -1,6 +1,5 @@
-    """
-        Shop functions
-        """
+    """Shop functions"""
+    
         MAIN_MENU = 0
         BUFF_SHOP = 1
         SKIN_SHOP = 2
