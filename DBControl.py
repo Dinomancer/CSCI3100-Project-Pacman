@@ -72,17 +72,17 @@ class DBControl:
                 cursor.execute(sql)
                 result = cursor.fetchall()
                 for rows in result:
-                    self.highscore = rows[2]
-                    self.gold = rows[3]
+                    self.highscore = int(rows[2])
+                    self.gold = int(rows[3])
                     buff = rows[4]
-                    self.buff[0] = buff[0]
-                    self.buff[1] = buff[1]
-                    self.buff[2] = buff[2]
-                    self.buff[3] = buff[3]
-                    self.buff[4] = buff[4]
+                    self.buff[0] = int(buff[0])
+                    self.buff[1] = int(buff[1])
+                    self.buff[2] = int(buff[2])
+                    self.buff[3] = int(buff[3])
+                    self.buff[4] = int(buff[4])
                     skin = rows[5]
-                    self.skin[0] = skin[0]
-                    self.skin[1] = skin[1]
+                    self.skin[0] = int(skin[0])
+                    self.skin[1] = int(skin[1])
                     self.mapdata = rows[6]
                 return True
         return False
@@ -137,8 +137,8 @@ class DBControl:
                         sql = "INSERT INTO Map VALUES ('%s', '%s')" % (mapcode, mapdata)
                         cursor.execute(sql)
                         self.db.commit()
-                        return True
-        return False
+                        return mapcode
+        return None
 
     # this function take a mapcode as input, it will search the mapcode in the database
     # if the map exist, it will return the map
@@ -150,4 +150,8 @@ class DBControl:
                 cursor.execute(sql)
                 if (cursor.rowcount):
                     results = cursor.fetchall()
-                    return results[0][0]
+                    self.mapdata = results[0][0]
+                    return True
+        else:
+            return False
+
