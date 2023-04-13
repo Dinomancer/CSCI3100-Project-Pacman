@@ -1,0 +1,60 @@
+    """
+        Shop functions
+        """
+        MAIN_MENU = 0
+        BUFF_SHOP = 1
+        SKIN_SHOP = 2
+        global current_skin_idx
+
+        if operation == "enter_shop":
+            self.setStage('Shop')
+
+        if operation == "enter_buff_shop":
+            self.setStage('Buff_Shop')
+
+        if operation == "enter_skin_shop":
+            self.setStage('Skin_Shop')
+            current_skin_idx = 0
+            # Missing: draw the icon of 0th skin
+
+        if operation == "exit_shop":
+            self.setStage('Menu')
+        
+        if operation == "return_to_shop_menu":
+            self.setStage('Shop')
+
+        # Buff shop actions;             
+        if operation == 'upgrade_buff0':
+            self.response(self.shop.upgrade_buff(0), "Notice")
+            self.setStage('Buff_Shop')
+        if operation == 'upgrade_buff1':
+            self.response(self.shop.upgrade_buff(1), "Notice")
+            self.setStage('Buff_Shop')
+        if operation == 'upgrade_buff2':
+            self.response(self.shop.upgrade_buff(2), "Notice")
+            self.setStage('Buff_Shop')
+        if operation == 'upgrade_buff3':
+            self.response(self.shop.upgrade_buff(3), "Notice")
+            self.setStage('Buff_Shop')
+        if operation == 'upgrade_buff4':
+            self.response(self.shop.upgrade_buff(4), "Notice")
+            self.setStage('Buff_Shop')
+
+        # Skin shop actions               
+        if operation == 'previous_skin':
+            current_skin_idx = (current_skin_idx - 1) % len(self.dbcontrol.skin)
+            self.setStage('Skin_Shop')
+            # Missing: draw the icon of current_index-th skin
+
+        if operation == 'next_skin':
+            current_skin_idx = (current_skin_idx + 1) % len(self.dbcontrol.skin)
+            self.setStage('Skin_Shop')
+            # Missing: draw the icon of current_index-th skin
+
+        if operation == 'buy_skin':
+            self.response(self.shop.buy_skin(current_skin_idx), "Notice")
+            self.setStage('Skin_Shop')
+
+        if operation == 'equip_skin':
+            self.response(self.shop.equip_skin(current_skin_idx), "Notice")
+            self.setStage('Skin_Shop')
