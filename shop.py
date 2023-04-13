@@ -46,7 +46,7 @@ class Shop:
                 else:
                     message = "Insufficient gold."
             else:
-                message = f"{self.DBControl.buff[buff_idx]} is already at the maximum level."
+                message = f"{self.buff_name[buff_idx]} is already at the maximum level."
         else:
             message = "Invalid buff index."
         return message
