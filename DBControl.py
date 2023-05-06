@@ -2,17 +2,30 @@ import pymysql
 import random
 import string
 
+#This class control the database of the game
 
 class DBControl:
+    #Initlize the object
     def __init__(self):
-        self.login_flag = False  # the login_flag let the user to use login require function
+        # the login_flag flag denote whether user is login or not
+        self.login_flag = False
+        # The username, password is empty at first
         self.username = ""
         self.password = ""
-        self.highscore = 0
+        # The gold is 0 at first
         self.gold = 0
+        # The buff level is all 0 at first
         self.buff = [0, 0, 0, 0, 0]  # 0-9 means level 1 to level 10
-        self.skin = [0, 0, 0]  # 0 means skin not yet buy, 1 means skin is bought
+        # The skin is 2,0,0 at first means that ghost is equip default skin
+        self.skin = [2, 0, 0]  # 0 means skin not yet buy, 1 means skin is bought
+        # The mapdata stores the pause game map data
+        # By default is empty
         self.mapdata = ""
+        # There is a highscore.txt in the folder to store the local highscore of the player
+        self.txt = open("highscore.txt", "r")
+        self.highscore = int(self.txt.readline())
+        self.txt.close()
+        # The db is the connect with the database, if connect, we can use db.operation() to access and modify the database.
         self.db = None
 
     # this function start the database connection, it must be call once before every other function is use.
@@ -88,7 +101,7 @@ class DBControl:
         return False
 
 
-    # this a funtion that upload user info except the mapdata
+    # This a funtion that upload user info except the local mapdata
     def upload(self):
         if self.login_flag and self.connect():
                 buff = ''.join(str(i) for i in self.buff)
@@ -104,8 +117,8 @@ class DBControl:
                     return False
         return False
 
-    # this is a function, that save the self.mapdata to the database that relate to the current username and password
-    # before call this function, the Interface is need to store mapdata in the class instance, self.mapdata
+    # This is a function, that save the self.mapdata to the database that relate to the current username and password
+    # before call this function, the Interface is need to store local mapdata in the class instance, self.mapdata
     def save(self):
         if self.login_flag and self.connect():
                 sql = "UPDATE Pacman SET mapdata = '%s' WHERE BINARY username='" % (
@@ -155,3 +168,63 @@ class DBControl:
         else:
             return False
 
+    # This is a function that delete the userdata in the database. It should not be use expect for testing use.
+    def deleteProfile(self):
+        if self.connect():
+            cursor = self.db.cursor()
+            sql = "DELETE FROM Pacman WHERE BINARY username='" + self.username + "' AND password='" + self.password + "';"
+            cursor.execute(sql)
+            self.db.commit()
+    # This is a function that delete the mapdata in the database by a mapcode. It should not be use expect for testing use.
+    def deleteAMap(self, mapcode):
+        if self.connect():
+            cursor = self.db.cursor()
+            sql = "DELETE FROM Map WHERE mapcode='%s'" % (mapcode)
+            cursor.execute(sql)
+            self.db.commit()
+
+#Test
+#In order to view the database,
+#access to http://www.phpmyadmin.co with following info or you can use terminal access
+#Server: sql12.freemysqlhosting.net
+#Name: sql12612119
+#Username: sql12612119
+#Password: uNQLBwFZZJ
+#Port number: 3306
+#Uncommented the following lines to test
+'''
+test = DBControl()
+print(test.connect()) # This will print True if connect success
+print(test.login("test", "test")) # This will print false since the tuple is not exist in the database
+print(test.register("test","test")) # This will print true since we now insert this tuple to the database
+print(test.login("test", "test")) # This will print true since now the tuple exist in the database
+test.mapdata = "2222222222222222222220000000000000000002200000000000000000022000222200000000000220002042000000000002200020420000000000022000222222222222000220000002000001120002200000020212021200022000000201110112000220000002021202120002200000020111011200022000000202120212000220000002003001120002200000022222222200022000000000000000000220000000000000000002200000000000000000022000000000000000000222222222222222222222"
+print(test.save()) # THis will save the mapdata to the database and output true
+input("Delete?") #This will let tester see the result before delete the profile, tester can check the website to see the result of above test
+test.deleteProfile() # This will delete this tuple in the database
+
+print(test.login("gold", "8888")) # This will print true since the tuple is exist in the database.
+print(test.download()) # This will print true and we download all the data from the database
+print(test.gold)
+print(test.highscore) #This two will print 8888 and number larger than 1000  if so, that means we successly download the data
+test.highscore += 100 # this will increase the highscore in the local
+print(test.upload()) #This will upload the userdata to the database now if you check the database, the highscore of this profile is 1100
+input("Replace?") #This will let tester see the result before replace the change data, tester can check the website to see the result of above test
+test.highscore -= 100
+test.upload()
+
+map1 = test.mapdata # This map data is from account gold 8888
+print(test.downloadAMap("342938")) #This will print true if it success download a map from the map database
+map2 = test.mapdata
+if (map1 != map2): #Check whether we success download a map
+    print("success")
+else:
+    print("fail")
+testmap = "1234" # we change the map data to test uploadAMap function
+mapcode = test.uploadAMap(testmap) # The mapcode will be return and we can use it to find the map in the database
+print(mapcode)
+input("Remember?") # Now tester can find the mapcode and mapdata in the database
+print(test.downloadAMap(mapcode)) # we use the mapcode to download the map from the database
+print(test.mapdata) # if mapdata is the data of testmap, then the function is work well
+test.deleteAMap(mapcode)
+'''
