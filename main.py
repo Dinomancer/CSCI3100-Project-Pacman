@@ -644,8 +644,15 @@ class Pacman:
                 if cause == Message.WIN_CLOSED or cause == 'Cancel':  # if user closes window or clicks cancel
                     break
                 if cause == "Confirm":
-                    self.setting.volumeChange(int(values[0]))
-                    break
+                    try:
+                        vol = int(values[0])
+                        if 0 <= vol and vol <= 100:
+                            self.setting.volumeChange(vol)
+                            break
+                        else:
+                            continue
+                    except:
+                        continue
             window.close()
             self.buttons[9] = Button((700, 944, 528, 576), "Img\\defaultSkin\\button.png", "cvol", str(self.setting.vol))
             self.clicksound.set_volume(self.setting.vol/100)
