@@ -9,6 +9,8 @@ Basic gameplay is similar to the original pacman. In addition, player can buy sk
 ######## Requirements ########
 ##############################
 
+Running environment:
+Pacman can be run only on windows system.
 Pacman requires python 3.0 or above, pygame, pysimplegui and pysql.
 
 Download python 3 here:	https://www.python.org/downloads/
